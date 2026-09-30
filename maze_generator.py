@@ -42,11 +42,49 @@ class MazeGenerator:
         self.perfect = perfect
         self.random = random.Random(seed)
 
-        # Every cell starts with four walls.
+        self.pattern = self.get_42_pattern_for_size(
+            width,
+            height,
+        )
+
         self.grid: List[List[int]] = [
             [15 for _ in range(width)]
             for _ in range(height)
         ]
+
+    @staticmethod
+    def get_42_pattern_for_size(
+        width: int,
+        height: int,
+    ) -> List[Tuple[int, int]]:
+        """Return cells used for the 42 pattern."""
+        if width < 7 or height < 5:
+            return []
+
+        pattern = [
+            "1010111",
+            "1010001",
+            "1110111",
+            "0010100",
+            "0010111",
+        ]
+
+        pattern_width = 7
+        pattern_height = 5
+
+        start_x = (width - pattern_width) // 2
+        start_y = (height - pattern_height) // 2
+
+        cells = []
+
+        for y, row in enumerate(pattern):
+            for x, value in enumerate(row):
+                if value == "1":
+                    cells.append(
+                        (start_x + x, start_y + y)
+                    )
+
+        return cells
 
     def inside(self, x: int, y: int) -> bool:
         """Check whether a cell is inside the maze."""
@@ -63,36 +101,20 @@ class MazeGenerator:
     ) -> None:
         """Remove a wall between two neighbouring cells."""
         for wall, dx, dy in self.DIRECTIONS:
-            if wall != direction:
-                continue
+            if wall == direction:
+                nx = x + dx
+                ny = y + dy
 
-            nx = x + dx
-            ny = y + dy
+                if not self.inside(nx, ny):
+                    return
 
-            if not self.inside(nx, ny):
+                self.grid[y][x] &= ~direction
+                self.grid[ny][nx] &= ~self.OPPOSITE[direction]
                 return
 
-            self.grid[y][x] &= ~direction
-            self.grid[ny][nx] &= ~self.OPPOSITE[direction]
-            return
-
-    def get_unvisited_neighbours(
-        self,
-        x: int,
-        y: int,
-        visited: List[List[bool]],
-    ) -> List[Tuple[int, int, int]]:
-        """Get unvisited neighbouring cells."""
-        neighbours = []
-
-        for direction, dx, dy in self.DIRECTIONS:
-            nx = x + dx
-            ny = y + dy
-
-            if self.inside(nx, ny) and not visited[ny][nx]:
-                neighbours.append((nx, ny, direction))
-
-        return neighbours
+    def blocked(self, x: int, y: int) -> bool:
+        """Check whether a cell belongs to the 42 pattern."""
+        return (x, y) in self.pattern
 
     def generate_perfect(self) -> None:
         """Generate a perfect maze using randomized DFS."""
@@ -109,42 +131,115 @@ class MazeGenerator:
         while stack:
             x, y = stack[-1]
 
-            neighbours = self.get_unvisited_neighbours(
-                x,
-                y,
-                visited,
-            )
+            neighbours = []
+
+            for direction, dx, dy in self.DIRECTIONS:
+                nx = x + dx
+                ny = y + dy
+
+                if not self.inside(nx, ny):
+                    continue
+
+                if visited[ny][nx]:
+                    continue
+
+                if self.blocked(nx, ny):
+                    continue
+
+                neighbours.append((nx, ny, direction))
 
             if not neighbours:
                 stack.pop()
                 continue
 
-            nx, ny, direction = self.random.choice(neighbours)
+            nx, ny, direction = self.random.choice(
+                neighbours
+            )
 
             self.remove_wall(x, y, direction)
-
             visited[ny][nx] = True
             stack.append((nx, ny))
 
     def add_loops(self) -> None:
-        """Open extra walls to create loops."""
+        """Open extra walls to create alternative routes."""
         walls = []
 
         for y in range(self.height):
             for x in range(self.width):
-                if x < self.width - 1:
+                if x + 1 < self.width:
                     walls.append((x, y, self.EAST))
 
-                if y < self.height - 1:
+                if y + 1 < self.height:
                     walls.append((x, y, self.SOUTH))
 
         self.random.shuffle(walls)
 
-        amount = (self.width * self.height) // 8
+        loops = 0
 
-        for x, y, direction in walls[:amount]:
+        for x, y, direction in walls:
+            if loops >= 2:
+                break
+
+            nx = x
+            ny = y
+
+            if direction == self.EAST:
+                nx += 1
+            else:
+                ny += 1
+
+            if self.blocked(x, y) or self.blocked(nx, ny):
+                continue
+
             if self.grid[y][x] & direction:
                 self.remove_wall(x, y, direction)
+                loops += 1
+
+    def make_corners_and_center_open(self) -> None:
+        """Give corners and centre more than one possible direction."""
+        cells = [
+            (0, 0),
+            (self.width - 1, 0),
+            (0, self.height - 1),
+            (self.width - 1, self.height - 1),
+            (self.width // 2, self.height // 2),
+        ]
+
+        for x, y in cells:
+            if self.blocked(x, y):
+                continue
+
+            neighbours = []
+
+            for direction, dx, dy in self.DIRECTIONS:
+                nx = x + dx
+                ny = y + dy
+
+                if not self.inside(nx, ny):
+                    continue
+
+                if self.blocked(nx, ny):
+                    continue
+
+                if self.grid[y][x] & direction:
+                    neighbours.append(direction)
+
+            self.random.shuffle(neighbours)
+
+            for direction in neighbours[:2]:
+                self.remove_wall(x, y, direction)
+
+    def close_42(self) -> None:
+        """Keep every 42 cell completely closed."""
+        for x, y in self.pattern:
+            self.grid[y][x] = 15
+
+            for direction, dx, dy in self.DIRECTIONS:
+                nx = x + dx
+                ny = y + dy
+
+                if self.inside(nx, ny):
+                    self.grid[ny][nx] |= self.OPPOSITE[direction]
 
     def generate(self) -> List[List[int]]:
         """Generate and return the maze."""
@@ -160,22 +255,29 @@ class MazeGenerator:
         if not self.inside(*self.exit):
             raise ValueError("Exit is outside the maze.")
 
+        if self.blocked(*self.entry):
+            raise ValueError("Entry cannot be inside 42.")
+
+        if self.blocked(*self.exit):
+            raise ValueError("Exit cannot be inside 42.")
+
         self.generate_perfect()
 
         if not self.perfect:
             self.add_loops()
+            self.make_corners_and_center_open()
+
+        self.close_42()
 
         return self.grid
 
     def solve(self) -> str:
         """Find the shortest path from entry to exit."""
         queue = deque([self.entry])
-
-        previous = {
+        previous: dict[tuple[int, int], Optional[tuple[int, int]]] = {
             self.entry: None
         }
-
-        move_used = {}
+        moves: dict[tuple[int, int], str] = {}
 
         while queue:
             x, y = queue.popleft()
@@ -193,31 +295,39 @@ class MazeGenerator:
                 if not self.inside(nx, ny):
                     continue
 
+                if self.blocked(nx, ny):
+                    continue
+
                 if (nx, ny) in previous:
                     continue
 
                 previous[(nx, ny)] = (x, y)
 
                 if direction == self.NORTH:
-                    move_used[(nx, ny)] = "N"
+                    moves[(nx, ny)] = "N"
                 elif direction == self.EAST:
-                    move_used[(nx, ny)] = "E"
+                    moves[(nx, ny)] = "E"
                 elif direction == self.SOUTH:
-                    move_used[(nx, ny)] = "S"
+                    moves[(nx, ny)] = "S"
                 else:
-                    move_used[(nx, ny)] = "W"
+                    moves[(nx, ny)] = "W"
 
                 queue.append((nx, ny))
 
         if self.exit not in previous:
             raise ValueError("No path from entry to exit.")
 
-        path = []
+        path: list[str] = []
         current = self.exit
 
         while current != self.entry:
-            path.append(move_used[current])
-            current = previous[current]
+            path.append(moves[current])
+
+            previous_cell = previous[current]
+            if previous_cell is None:
+                raise ValueError("Invalid path reconstruction.")
+
+            current = previous_cell
 
         path.reverse()
 
