@@ -58,7 +58,8 @@ class MazeGenerator:
         height: int,
     ) -> List[Tuple[int, int]]:
         """Return cells used for the 42 pattern."""
-        if width < 7 or height < 5:
+        # The pattern needs a one-cell border so the maze stays connected.
+        if width < 9 or height < 7:
             return []
 
         pattern = [

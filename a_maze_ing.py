@@ -167,6 +167,12 @@ def main() -> None:
 
         generator = create_generator(config)
 
+        if not generator.pattern:
+            print(
+                "Error: maze is too small to display the 42 pattern "
+                "(minimum size is 9x7)."
+            )
+
         grid = generator.generate()
         path = generator.solve()
 
