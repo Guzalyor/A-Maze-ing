@@ -1,6 +1,8 @@
 
 from typing import List, Tuple
 
+from maze_generator import MazeGenerator
+
 
 class MazeDisplay:
     """Display a maze in the terminal using ASCII characters."""
@@ -48,8 +50,9 @@ class MazeDisplay:
             cells.append((x, y))
 
         return cells
+
     def show(self) -> None:
-        """Print the maze to the terminal with a coloured 42."""
+
         path_cells = set(self._path_cells())
 
         north = 1
@@ -57,42 +60,13 @@ class MazeDisplay:
         south = 4
         west = 8
 
-        # Cells that form the 42 pattern.
-        # Coordinates are (x, y).
-        center_x = self.grid[0].__len__() // 2
-        center_y = len(self.grid) // 2
+        pattern_42 = MazeGenerator.get_42_pattern_for_size(
+            len(self.grid[0]),
+            len(self.grid),
+        )
 
-        four = {
-            (center_x - 4, center_y - 2),
-            (center_x - 4, center_y - 1),
-            (center_x - 4, center_y),
-            (center_x - 4, center_y + 1),
-            (center_x - 4, center_y + 2),
-            (center_x - 3, center_y),
-            (center_x - 2, center_y),
-            (center_x - 1, center_y),
-            (center_x - 1, center_y - 1),
-            (center_x - 1, center_y - 2),
-        }
-
-        two = {
-            (center_x + 1, center_y - 2),
-            (center_x + 2, center_y - 2),
-            (center_x + 3, center_y - 2),
-            (center_x + 3, center_y - 1),
-            (center_x + 1, center_y),
-            (center_x + 2, center_y),
-            (center_x + 3, center_y),
-            (center_x + 1, center_y + 1),
-            (center_x + 1, center_y + 2),
-            (center_x + 2, center_y + 2),
-            (center_x + 3, center_y + 2),
-        }
-
-        pattern_42 = four | two
-
-        # ANSI colour codes.
         yellow = "\033[93m"
+        red = "\033[91m"
         reset = "\033[0m"
 
         for y, row in enumerate(self.grid):
@@ -124,7 +98,7 @@ class MazeDisplay:
                     middle += " X "
 
                 elif (x, y) in path_cells:
-                    middle += "\033[91m ● \033[0m"
+                    middle += f"{red} ● {reset}"
 
                 else:
                     middle += "   "
@@ -146,4 +120,3 @@ class MazeDisplay:
                 bottom += "+   "
 
         print(bottom + "+")
-
