@@ -58,7 +58,6 @@ class MazeDisplay:
         return cells
 
     def show(self) -> None:
-
         """Print the maze to the terminal."""
         if self.show_path:
             path_cells = set(self._path_cells())
@@ -87,7 +86,7 @@ class MazeDisplay:
                 if cell & north:
                     top += f"{wall}+---{reset}"
                 else:
-                    top += f"{wall}+---{reset}"
+                    top += f"{wall}+{reset}   "
 
             print(top + f"{wall}+{reset}")
 
