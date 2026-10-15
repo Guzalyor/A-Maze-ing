@@ -14,8 +14,9 @@ can be generated in two modes:
 
 - **Perfect** (`PERFECT=True`): there is exactly one path between any two
   cells, so exactly one path from the entry to the exit.
-- **Non-perfect** (`PERFECT=False`): extra walls are opened to create loops,
-  so there is more than one route between the entry and the exit.
+- **Non-perfect** (`PERFECT=False`): a board usable by a Pac-Man-like
+  game. Extra walls are opened so there are several independent routes,
+  almost no dead-ends, and the four corners and the centre are open.
 
 The generation logic lives in a single class, `MazeGenerator`, which can be
 reused in other projects.
@@ -68,6 +69,8 @@ Rules:
 - The "42" needs a maze of at least **9x7** cells (the pattern is 7x5 plus a
   one-cell border). For smaller mazes the pattern is left out and an error
   message is printed, but the maze is still generated.
+- The "42" is placed so that the empty column between the "4" and the "2"
+  lies on the centre cell of the maze, which therefore always stays open.
 
 Default `config.txt`:
 
@@ -96,6 +99,8 @@ Cells are written row by row, one row per line. After an empty line come
 three more lines: the entry coordinates, the exit coordinates, and the
 shortest path from entry to exit using the letters `N`, `E`, `S`, `W`.
 
+The output file is regenerated on every run, so it is not tracked by git.
+
 ## Maze generation algorithm
 
 **Randomized depth-first search (recursive backtracker)**, implemented
@@ -109,8 +114,17 @@ iteratively with a stack:
    backtracks by popping the stack.
 3. When the stack is empty, every reachable cell has been visited exactly
    once, which gives a spanning tree: a perfect maze.
-4. If `PERFECT=False`, extra walls are removed to create loops, and the four
-   corners and the centre are given extra openings.
+4. If `PERFECT=False`, the perfect maze is turned into a Pac-Man-like
+   board:
+   - a few random walls are removed to create loops;
+   - **dead-ends are removed**: every cell with three closed walls gets one
+     more opening, preferably towards a neighbouring dead-end so that one
+     removed wall fixes two dead-ends. Cells are visited in a random
+     (seeded) order, and walls next to the "42" are never opened;
+   - the four corners and the centre are given extra openings.
+
+   The only dead-ends left are the small pockets inside the "4" and the
+   "2", which are closed on three sides by the pattern itself.
 5. Finally, the "42" cells are closed on all four sides (the neighbouring
    cells' walls are updated too, so the encoding stays coherent).
 
@@ -124,6 +138,8 @@ which guarantees the shortest route in an unweighted grid.
 - It is simple to implement and to explain, and an iterative stack avoids
   Python's recursion limit on large mazes.
 - It creates long, winding corridors and never leaves large open areas.
+  Removing dead-ends only opens one extra wall per dead-end, so the
+  non-perfect board stays a maze rather than an open field.
 - Using `random.Random(seed)` makes every maze reproducible from its seed.
 
 ## Reusable code
@@ -198,16 +214,4 @@ TODO
 
 ### How AI was used
 
-Claude Code was used for:
 
-- Testing the `main` and `mtousian` branches side by side and checking the
-  generated mazes (wall coherence, valid shortest path, perfect-maze check,
-  error handling).
-- Merging the `mtousian` branch into `main`.
-- Adding the error message printed when the maze is too small for the "42",
-  and choosing the 9x7 minimum size.
-- Writing the `Makefile` and a first draft of this README.
-
-All AI output was reviewed, tested and is understood by the team.
-
-TODO: add any other ways AI was used during the project.
