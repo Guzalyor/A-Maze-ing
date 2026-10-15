@@ -70,11 +70,10 @@ class MazeGenerator:
             "0010111",
         ]
 
-        pattern_width = 7
-        pattern_height = 5
-
-        start_x = (width - pattern_width) // 2
-        start_y = (height - pattern_height) // 2
+        # Put the gap between the "4" and the "2" (column 3, row 2
+        # of the pattern) on the centre cell, so the centre stays open.
+        start_x = width // 2 - 3
+        start_y = height // 2 - 2
 
         cells = []
 
