@@ -13,6 +13,8 @@ class MazeDisplay:
         entry: Tuple[int, int],
         exit: Tuple[int, int],
         path: str,
+        show_path: bool = True,
+        wall_color: str = "",
     ) -> None:
         """Initialize the display.
 
@@ -21,11 +23,15 @@ class MazeDisplay:
             entry: Entry coordinates.
             exit: Exit coordinates.
             path: Shortest path.
+            show_path: Whether to draw the path.
+            wall_color: ANSI colour code for the walls ("" = default).
         """
         self.grid = grid
         self.entry = entry
         self.exit = exit
         self.path = path
+        self.show_path = show_path
+        self.wall_color = wall_color
 
     def _path_cells(self) -> List[Tuple[int, int]]:
         """Calculate cells belonging to the solution path.
@@ -53,7 +59,11 @@ class MazeDisplay:
 
     def show(self) -> None:
 
-        path_cells = set(self._path_cells())
+        """Print the maze to the terminal."""
+        if self.show_path:
+            path_cells = set(self._path_cells())
+        else:
+            path_cells = set()
 
         north = 1
         east = 2
@@ -68,23 +78,24 @@ class MazeDisplay:
         yellow = "\033[93m"
         red = "\033[91m"
         reset = "\033[0m"
+        wall = self.wall_color
 
         for y, row in enumerate(self.grid):
             top = ""
 
             for cell in row:
                 if cell & north:
-                    top += "+---"
+                    top += f"{wall}+---{reset}"
                 else:
-                    top += "+   "
+                    top += f"{wall}+---{reset}"
 
-            print(top + "+")
+            print(top + f"{wall}+{reset}")
 
             middle = ""
 
             for x, cell in enumerate(row):
                 if cell & west:
-                    middle += "|"
+                    middle += f"{wall}|{reset}"
                 else:
                     middle += " "
 
@@ -105,7 +116,7 @@ class MazeDisplay:
 
             if row:
                 if row[-1] & east:
-                    middle += "|"
+                    middle += f"{wall}|{reset}"
                 else:
                     middle += " "
 
@@ -115,8 +126,8 @@ class MazeDisplay:
 
         for cell in self.grid[-1]:
             if cell & south:
-                bottom += "+---"
+                bottom += f"{wall}+---{reset}"
             else:
-                bottom += "+   "
+                bottom += f"{wall}+{reset}   "
 
-        print(bottom + "+")
+        print(bottom + f"{wall}+{reset}")
