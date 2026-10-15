@@ -230,6 +230,59 @@ class MazeGenerator:
             for direction in neighbours[:2]:
                 self.remove_wall(x, y, direction)
 
+    def is_dead_end(self, x: int, y: int) -> bool:
+        """Return True if the cell has exactly one open side."""
+        if self.blocked(x, y):
+            return False
+
+        cell = self.grid[y][x]
+        closed_walls = bin(cell).count("1")
+
+        return closed_walls == 3
+
+    def remove_dead_ends(self) -> None:
+        """Open one extra wall in every dead-end where possible."""
+        cells = []
+        for y in range(self.height):
+            for x in range(self.width):
+                cells.append((x, y))
+
+        self.random.shuffle(cells)
+
+        for x, y in cells:
+            if not self.is_dead_end(x, y):
+                continue
+
+            best = []
+            others = []
+
+            for direction, dx, dy in self.DIRECTIONS:
+                nx = x + dx
+                ny = y + dy
+
+                if not self.inside(nx, ny):
+                    continue
+
+                if self.blocked(nx, ny):
+                    continue
+
+                if self.grid[y][x] & direction == 0:
+                    continue
+
+                if self.is_dead_end(nx, ny):
+                    best.append(direction)
+                else:
+                    others.append(direction)
+
+            if best:
+                choice = self.random.choice(best)
+            elif others:
+                choice = self.random.choice(others)
+            else:
+                continue
+
+            self.remove_wall(x, y, choice)
+
     def close_42(self) -> None:
         """Keep every 42 cell completely closed."""
         for x, y in self.pattern:
@@ -266,6 +319,7 @@ class MazeGenerator:
 
         if not self.perfect:
             self.add_loops()
+            self.remove_dead_ends()
             self.make_corners_and_center_open()
 
         self.close_42()
