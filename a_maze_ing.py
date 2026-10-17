@@ -154,6 +154,46 @@ def create_generator(config: Dict[str, str]) -> MazeGenerator:
     )
 
 
+def clear_screen() -> None:
+    """Clear the terminal before drawing the maze again."""
+    print("\033[2J\033[H", end="")
+
+
+def save_and_display(
+    generator: MazeGenerator,
+    show_path: bool,
+    wall_color: str,
+    output_file: str,
+) -> None:
+    """Write and display the current maze."""
+    grid = generator.get_grid()
+    path = generator.solve()
+
+    writer = MazeWriter(
+        grid=grid,
+        entry=generator.entry,
+        exit=generator.exit,
+        path=path,
+    )
+    writer.write(output_file)
+
+    display = MazeDisplay(
+        grid=grid,
+        entry=generator.entry,
+        exit=generator.exit,
+        path=path,
+        show_path=show_path,
+        wall_color=wall_color,
+    )
+    display.show()
+
+    print()
+    print("N - Generate a new maze")
+    print("P - Show/hide shortest path")
+    print("C - Change wall colour")
+    print("Q - Quit")
+
+
 def main() -> None:
     """Run the maze generator program."""
     if len(sys.argv) != 2:
@@ -165,6 +205,18 @@ def main() -> None:
     try:
         config = read_config(config_file)
 
+        show_path = True
+        colours = [
+            "",
+            "\033[91m",
+            "\033[92m",
+            "\033[93m",
+            "\033[94m",
+            "\033[95m",
+            "\033[96m",
+        ]
+        colour_index = 0
+
         generator = create_generator(config)
 
         if not generator.pattern:
@@ -174,25 +226,65 @@ def main() -> None:
             )
 
         grid = generator.generate()
-        path = generator.solve()
 
-        writer = MazeWriter(
-            grid=grid,
-            entry=generator.entry,
-            exit=generator.exit,
-            path=path,
-        )
+        while True:
+            # Clear the terminal before displaying the maze.
+            print("\033[2J\033[H", end="")
 
-        writer.write(config["OUTPUT_FILE"])
+            path = generator.solve()
 
-        display = MazeDisplay(
-            grid=grid,
-            entry=generator.entry,
-            exit=generator.exit,
-            path=path,
-        )
+            writer = MazeWriter(
+                grid=grid,
+                entry=generator.entry,
+                exit=generator.exit,
+                path=path,
+            )
+            writer.write(config["OUTPUT_FILE"])
 
-        display.show()
+            display = MazeDisplay(
+                grid=grid,
+                entry=generator.entry,
+                exit=generator.exit,
+                path=path,
+                show_path=show_path,
+                wall_color=colours[colour_index],
+            )
+            display.show()
+
+            print()
+            print("N - Generate a new maze")
+            print("P - Show/hide shortest path")
+            print("C - Change wall colour")
+            print("Q - Quit")
+
+            choice = input("\nChoose an option: ").strip().lower()
+
+            if choice == "q":
+                print("Goodbye!")
+                break
+
+            elif choice == "p":
+                show_path = not show_path
+
+            elif choice == "c":
+                colour_index = (colour_index + 1) % len(colours)
+
+            elif choice == "n":
+                new_config = config.copy()
+                new_config.pop("SEED", None)
+
+                generator = create_generator(new_config)
+
+                if not generator.pattern:
+                    print(
+                        "Error: maze is too small to display the 42 pattern "
+                        "(minimum size is 9x7)."
+                    )
+
+                grid = generator.generate()
+
+            else:
+                input("Invalid option. Press Enter to continue.")
 
     except FileNotFoundError:
         print(f"Error: configuration file '{config_file}' not found.")
