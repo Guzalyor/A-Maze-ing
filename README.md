@@ -181,23 +181,61 @@ the terminal.
 
 ### Roles
 
-- **gikromov**: TODO
-- **mtousian**: TODO
+- **gikromov**: Build automation (Makefile), project documentation (README.md),
+  code review, testing, and repository management on GitHub (branches,
+  merges, keeping the main branch stable).
+- **mtousian**: Core implementation: maze generation algorithm, solver,
+  output file writer, terminal display, and configuration parsing.
 
 ### Planning and how it evolved
 
-TODO
+1. **Research:** We started by studying existing maze implementations and
+   common generation algorithms before writing any code.
+2. **First implementation:** We built an initial version right away and ran
+   into problems with directions. At first we thought Python handled x and y
+   differently, but we realised the cause was how a 2D list is indexed:
+   the grid is stored as `grid[y][x]` (rows first), and `y` increases
+   downwards. Once we understood this, the wall encoding and the path
+   letters (`N`, `E`, `S`, `W`) became consistent.
+3. **Design decisions together:** We worked out the minimum maze size
+   needed to fit the "42" pattern (9x7: the 7x5 pattern plus a one-cell
+   border).
+4. **Remote workflow:** We then worked mostly remotely. mtousian pushed
+   changes and asked gikromov to review them, explaining any part that was
+   unclear.
+5. **Validation:** Once the first prototype worked, gikromov tested it and
+   checked it against the subject's requirements to find anything missing.
 
 ### What worked well and what could be improved
+#### What worked well
 
-TODO
+- **Knowledge sharing:** mtousian already had experience with Python, and
+  gikromov was new to it. This made the project a real learning
+  opportunity: code was explained during reviews instead of just being
+  merged.
+- **Learning from existing work rather than generating it:** Instead of
+  relying on AI to produce the code, we studied existing maze
+  implementations from tutorials and articles (e.g. on Medium), then
+  adapted them step by step to the subject's requirements.
+
+#### What could be improved
+
+- **Remote collaboration:** We worked mostly remotely, which caused delays
+  (waiting for code reviews) and misunderstandings (explanations over
+  messages were sometimes unclear). Next time we would work together at
+  Codam, so questions can be answered and code reviewed on the spot.
+- **Uneven work split:** Because of the difference in Python experience,
+  most of the core code was written by mtousian, and gikromov had to catch up on parts of the code through reviews. Next time, gikromov would first complete the
+  Python modules of the 42 curriculum, so that both of us could contribute
+  to the core code from the start.
+
 
 ### Tools
 
 - Git and GitHub for version control and sharing branches
 - flake8 and mypy for code style and type checking
 - Make to automate install, run, debug, lint and clean
-- Claude Code (AI assistant), see below
+- Claude Code (AI assistant)
 
 ## Resources
 
@@ -214,4 +252,10 @@ TODO
 
 ### How AI was used
 
+AI tools were used during this project for:
+- Documentation formatting
+- Complexity explanations
+- README structure suggestions
+- Algorithm research assistance
 
+All generated content was reviewed, tested, and fully understood before integration into the project.
